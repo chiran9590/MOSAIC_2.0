@@ -1,0 +1,62 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.DS_Store
+data/raw/
+data/instruments/
+# Local environment files
+.env.save
+.env.*
+!.env.example
+
+# Local paper-trading database
+data/paper_trading.sqlite3
+
+# Market datasets and generated data
+data/processed/
+reports/
+
+# Local databases and database backups
+*.sqlite
+*.sqlite3
+*.sqlite_backup
+*.db
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# Python cache and virtual environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system files
+.DS_Store
+
+# Old source backups
+*.backup
+*.before_*
+*.paper_backup
+*.sqlite_backup
+*~
+
+# Broker authentication (not used by current mock API)
+src/data/dhan_auth.py
+
+# Keep only the model artifacts used by the current prediction engine
+models/saved/*
+!models/saved/mosaic_candidate_no_macd_v1.joblib
+!models/saved/mosaic_candidate_no_macd_v1_encoder.joblib
+!models/saved/mosaic_candidate_no_macd_v1_features.json
+!models/saved/mosaic_candidate_no_macd_v1_metadata.json
+
+# Accidental empty file
+src/paper_trading/trade_store.py.

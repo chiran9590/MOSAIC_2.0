@@ -1,0 +1,181 @@
+from dataclasses import dataclass, asdict
+from datetime import datetime
+from typing import Any
+
+
+VALID_LABELS = {"UP", "DOWN", "SIDEWAYS"}
+
+
+@dataclass
+class TradingDecision:
+    symbol: str
+    decision: str
+    direction: str | None
+    prediction: str
+    probabilities: dict[str, float]
+    candle_timestamp: str
+    prediction_horizon_minutes: int
+    model_version: str
+    status: str
+    reason: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+class DecisionEngine:
+    """
+    Converts a MOSAIC prediction into a structured decision.
+
+    This initial version does not place orders or authorize
+    live trades. UP and DOWN are directional candidates only.
+    """
+
+    def evaluate(self, prediction: dict[str, Any]) -> TradingDecision:
+
+        required_fields = {
+            "symbol",
+            "prediction",
+            "probabilities",
+            "candle_timestamp",
+            "prediction_horizon_minutes",
+            "model_version",
+            "status",
+        }
+
+        missing = required_fields - prediction.keys()
+
+        if missing:
+            raise ValueError(
+                f"Missing prediction fields: {sorted(missing)}"
+            )
+
+        label = str(prediction["prediction"]).upper()
+
+        if label not in VALID_LABELS:
+            raise ValueError(f"Invalid prediction label: {label}")
+
+        probabilities = prediction["probabilities"]
+
+        if not isinstance(probabilities, dict):
+            raise ValueError("Probabilities must be a dictionary.")
+
+        if set(probabilities) != VALID_LABELS:
+            raise ValueError(
+                "Probabilities must contain UP, DOWN and SIDEWAYS."
+            )
+
+        clean_probabilities = {}
+
+        for key, value in probabilities.items():
+
+            try:
+                probability = float(value)
+            except (TypeError, ValueError):
+                raise ValueError(
+                    f"Invalid probability for {key}."
+                )
+
+            if not 0.0 <= probability <= 1.0:
+                raise ValueError(
+                    f"Probability for {key} is outside [0, 1]."
+                )
+
+            clean_probabilities[key] = probability
+
+        total_probability = sum(clean_probabilities.values())
+
+        if abs(total_probability - 1.0) > 0.001:
+            raise ValueError(
+                f"Probabilities must sum to 1. "
+                f"Received {total_probability:.6f}."
+            )
+
+        horizon = int(prediction["prediction_horizon_minutes"])
+
+        if horizon <= 0:
+            raise ValueError("Prediction horizon must be positive.")
+
+        timestamp = str(prediction["candle_timestamp"])
+
+        if not timestamp.strip():
+            raise ValueError("Candle timestamp cannot be empty.")
+
+        model_status = str(prediction["status"]).upper()
+
+        if model_status != "EXPERIMENTAL":
+            return TradingDecision(
+                symbol=str(prediction["symbol"]),
+                decision="NO_TRADE",
+                direction=None,
+                prediction=label,
+                probabilities=clean_probabilities,
+                candle_timestamp=timestamp,
+                prediction_horizon_minutes=horizon,
+                model_version=str(prediction["model_version"]),
+                status=model_status,
+                reason="Model status is not approved for evaluation.",
+            )
+
+        if label == "SIDEWAYS":
+            decision = "HOLD"
+            direction = None
+            reason = "Model predicts a sideways market."
+
+        elif label == "UP":
+            decision = "LONG_CANDIDATE"
+            direction = "LONG"
+            reason = (
+                "Model predicts UP. Risk checks and trade filters "
+                "have not yet been applied."
+            )
+
+        else:
+            decision = "SHORT_CANDIDATE"
+            direction = "SHORT"
+            reason = (
+                "Model predicts DOWN. Risk checks and trade filters "
+                "have not yet been applied."
+            )
+
+        return TradingDecision(
+            symbol=str(prediction["symbol"]),
+            decision=decision,
+            direction=direction,
+            prediction=label,
+            probabilities=clean_probabilities,
+            candle_timestamp=timestamp,
+            prediction_horizon_minutes=horizon,
+            model_version=str(prediction["model_version"]),
+            status="EXPERIMENTAL",
+            reason=reason,
+        )
+
+
+if __name__ == "__main__":
+
+    engine = DecisionEngine()
+
+    sample_prediction = {
+        "symbol": "RELIANCE",
+        "prediction": "UP",
+        "probabilities": {
+            "DOWN": 0.20,
+            "SIDEWAYS": 0.15,
+            "UP": 0.65,
+        },
+        "candle_timestamp": "2026-11-04 10:00:00",
+        "prediction_horizon_minutes": 30,
+        "model_version": "mosaic_candidate_no_macd_v1",
+        "status": "EXPERIMENTAL",
+    }
+
+    result = engine.evaluate(sample_prediction)
+
+    print("\nMOSAIC 2.0 - DECISION ENGINE TEST")
+    print("=" * 55)
+
+    for key, value in result.to_dict().items():
+        print(f"{key}: {value}")
+
+    print("=" * 55)
