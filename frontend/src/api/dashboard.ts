@@ -4,6 +4,8 @@ import type {
   PerformanceResponse,
   PaperTradesResponse,
   MarketResponse,
+  PredictionResponse,
+  LiveStrategyResponse,
 } from '../types/api'
 
 export const getPerformance = async () => {
@@ -31,5 +33,31 @@ export const getMarketData = async () => {
   const response = await apiClient.get<MarketResponse>(
     '/api/v1/market/mock'
   )
+  return response.data
+}
+
+export const getMockPrediction = async () => {
+  const response = await apiClient.post<PredictionResponse>(
+    '/api/v1/predict/mock'
+  )
+
+  return response.data
+}
+
+export const getLivePrediction = async () => {
+  const response = await apiClient.post<PredictionResponse>(
+    '/api/v1/predict/live',
+    { symbol: 'RELIANCE' }
+  )
+
+  return response.data
+}
+
+export const getLiveStrategy = async () => {
+  const response = await apiClient.post<LiveStrategyResponse>(
+    '/api/v1/strategy/live',
+    { symbol: 'RELIANCE' }
+  )
+
   return response.data
 }

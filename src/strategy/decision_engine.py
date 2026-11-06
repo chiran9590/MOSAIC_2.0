@@ -103,7 +103,7 @@ class DecisionEngine:
 
         model_status = str(prediction["status"]).upper()
 
-        if model_status != "EXPERIMENTAL":
+        if model_status != "PRODUCTION_APPROVED":
             return TradingDecision(
                 symbol=str(prediction["symbol"]),
                 decision="NO_TRADE",
@@ -114,7 +114,7 @@ class DecisionEngine:
                 prediction_horizon_minutes=horizon,
                 model_version=str(prediction["model_version"]),
                 status=model_status,
-                reason="Model status is not approved for evaluation.",
+                reason="Model is not explicitly approved for trading.",
             )
 
         if label == "SIDEWAYS":

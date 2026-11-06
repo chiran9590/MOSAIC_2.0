@@ -1,9 +1,14 @@
 
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getPaperTrades, getPerformance } from './api/dashboard'
 import type { PaperTrade, PerformanceResponse } from './types/api'
-import PaperTrading from './pages/PaperTrading'
+const PaperTrading = lazy(() => import('./pages/PaperTrading'))
+const Predictions = lazy(() => import('./pages/Predictions'))
+const Market = lazy(() => import('./pages/Market'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const Strategy = lazy(() => import('./pages/Strategy'))
+const EquityChart = lazy(() => import('./components/EquityChart'))
 import {
   Activity,
   BarChart3,
@@ -22,15 +27,6 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 
 const navigation = [
   { label: 'Overview', icon: LayoutDashboard, path: '/' },
@@ -106,6 +102,7 @@ function App() {
   const [trades, setTrades] = useState<PaperTrade[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -146,7 +143,7 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [retryCount])
 
   const equityData = performance
     ? [
@@ -304,7 +301,19 @@ function App() {
             </div>
           </header>
 
-          {activePage === 'Overview' ? (
+          <Suspense
+            fallback={
+              <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="flex items-center gap-3 rounded-xl border border-[#202d40] bg-[#0e1625] px-5 py-4">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#304158] border-t-[#53d6b0]" />
+                  <span className="text-sm text-[#8492a6]">
+                    Loading MOSAIC workspace...
+                  </span>
+                </div>
+              </div>
+            }
+          >
+            {activePage === 'Overview' ? (
             <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-8">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -322,8 +331,18 @@ function App() {
               </div>
 
               {error && (
-                <div className="rounded-lg border border-[#713b42] bg-[#2b1920] px-4 py-3 text-xs text-[#f4a0a8]">
-                  Dashboard API error: {error}. Check that the FastAPI backend is running on port 8001.
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#713b42] bg-[#2b1920] px-4 py-3">
+                  <p className="text-xs text-[#f4a0a8]">
+                    Dashboard API error: {error}. Check that the FastAPI backend is running on port 8001.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setRetryCount((count) => count + 1)}
+                    disabled={loading}
+                    className="rounded-lg border border-[#713b42] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#49232b] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
 
@@ -379,50 +398,15 @@ function App() {
                     </div>
                   </div>
                   <div className="mt-6 h-[260px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={equityData}>
-                        <defs>
-                          <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#20c997" stopOpacity={0.25} />
-                            <stop offset="95%" stopColor="#20c997" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid stroke="#243246" strokeDasharray="3 5" vertical={false} />
-                        <XAxis
-                          dataKey="time"
-                          tick={{ fill: '#8492a6', fontSize: 11 }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          domain={['dataMin - 20', 'dataMax + 20']}
-                          tick={{ fill: '#8492a6', fontSize: 11 }}
-                          axisLine={false}
-                          tickLine={false}
-                          tickFormatter={(value: number) => `₹${(value / 1000).toFixed(1)}k`}
-                          width={58}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            background: '#111d2d',
-                            border: '1px solid #304158',
-                            borderRadius: 8,
-                            color: '#e2e8f0',
-                          }}
-                          formatter={(value) => [
-                            `₹${Number(value).toLocaleString('en-IN')}`,
-                            'Equity',
-                          ]}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="equity"
-                          stroke="#20c997"
-                          strokeWidth={2}
-                          fill="url(#equityGradient)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                    <Suspense
+                      fallback={
+                        <div className="flex h-full items-center justify-center text-xs text-[#8492a6]">
+                          Loading equity chart...
+                        </div>
+                      }
+                    >
+                      <EquityChart data={equityData} />
+                    </Suspense>
                   </div>
                 </section>
 
@@ -585,8 +569,16 @@ function App() {
                 <span>NO REAL BROKER ORDERS · PAPER TRADING ONLY</span>
               </footer>
             </div>
+          ) : activePage === 'Market' ? (
+            <Market />
+          ) : activePage === 'Predictions' ? (
+            <Predictions />
           ) : activePage === 'Paper Trading' ? (
             <PaperTrading />
+          ) : activePage === 'Analytics' ? (
+            <Analytics />
+          ) : activePage === 'Strategy' ? (
+            <Strategy />
           ) : (
             <div className="mx-auto max-w-[1600px] p-4 md:p-8">
               <div className="rounded-xl border border-[#202d40] bg-[#0e1625] p-6 md:p-8">
@@ -631,7 +623,8 @@ function App() {
                 </button>
               </div>
             </div>
-          )}
+            )}
+          </Suspense>
         </main>
       </div>
     </div>

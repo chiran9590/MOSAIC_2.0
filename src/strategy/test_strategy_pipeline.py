@@ -20,7 +20,7 @@ class TestStrategyPipeline(unittest.TestCase):
             "candle_timestamp": "2026-11-04 10:00:00",
             "prediction_horizon_minutes": 30,
             "model_version": "mosaic_candidate_no_macd_v1",
-            "status": "EXPERIMENTAL",
+            "status": "PRODUCTION_APPROVED",
         }
 
     def test_long_paper_candidate(self):
@@ -126,6 +126,23 @@ class TestStrategyPipeline(unittest.TestCase):
         )
 
         self.assertTrue(result.paper_trading_only)
+        self.assertFalse(result.real_order_placed)
+
+    def test_experimental_model_cannot_create_paper_candidate(self):
+        prediction = self.up_prediction.copy()
+        prediction["status"] = (
+            "EXPERIMENTAL_CANDIDATE_NOT_PRODUCTION_VALIDATED"
+        )
+
+        result = self.pipeline.evaluate(
+            prediction,
+            entry_price=1500,
+        )
+
+        self.assertEqual(result.decision, "NO_TRADE")
+        self.assertIsNone(result.direction)
+        self.assertFalse(result.risk_accepted)
+        self.assertEqual(result.quantity, 0)
         self.assertFalse(result.real_order_placed)
 
 

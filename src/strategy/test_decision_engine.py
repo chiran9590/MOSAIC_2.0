@@ -22,7 +22,7 @@ class TestDecisionEngine(unittest.TestCase):
             "candle_timestamp": "2026-11-04 10:00:00",
             "prediction_horizon_minutes": 30,
             "model_version": "mosaic_candidate_no_macd_v1",
-            "status": "EXPERIMENTAL",
+            "status": "PRODUCTION_APPROVED",
         }
 
     def test_up_prediction(self):
@@ -63,6 +63,17 @@ class TestDecisionEngine(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.engine.evaluate(prediction)
+
+    def test_experimental_model_is_blocked(self):
+        prediction = self.make_prediction("UP")
+        prediction["status"] = (
+            "EXPERIMENTAL_CANDIDATE_NOT_PRODUCTION_VALIDATED"
+        )
+        result = self.engine.evaluate(prediction)
+        self.assertEqual(result.decision, "NO_TRADE")
+        self.assertIsNone(result.direction)
+        self.assertEqual(result.status,
+                         "EXPERIMENTAL_CANDIDATE_NOT_PRODUCTION_VALIDATED")
 
 
 if __name__ == "__main__":

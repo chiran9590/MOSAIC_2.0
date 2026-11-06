@@ -125,7 +125,7 @@ export default function PaperTrading() {
   }, [])
 
   useEffect(() => {
-    void loadData()
+    void Promise.resolve().then(() => loadData())
   }, [loadData])
 
   const symbols = useMemo(
@@ -229,8 +229,9 @@ export default function PaperTrading() {
 
       <div className="flex items-center gap-2 rounded-lg border border-[#493e25] bg-[#29251a] px-4 py-3 text-xs text-amber-300">
         <Activity size={16} />
-        Paper mode active. No real broker orders are placed. Market data may
-        be synthetic.
+        New paper trades are disabled until model production approval.
+        Existing simulated trades can still be reviewed and closed. No real
+        broker orders are placed.
       </div>
 
       {error && (

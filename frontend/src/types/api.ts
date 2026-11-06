@@ -83,3 +83,86 @@ export interface MarketResponse {
   candles: MarketCandle[]
   warning: string
 }
+
+export interface PredictionResult {
+  symbol: string
+  prediction: 'DOWN' | 'SIDEWAYS' | 'UP'
+  probabilities: {
+    DOWN: number
+    SIDEWAYS: number
+    UP: number
+  }
+  candle_timestamp: string
+  latest_market_candle_timestamp?: string
+  prediction_age_candles?: number
+  is_latest_candle_prediction?: boolean
+  prediction_horizon_minutes: number
+  model_version: string
+  status: string
+}
+
+export interface PredictionResponse {
+  success: boolean
+  symbol?: string
+  data_source: string
+  synthetic_data: boolean
+  trading_date?: string
+  timeframe?: string
+  input_candles: number
+  completed_5min_candles: number
+  last_candle_timestamp?: string
+  prediction_result: PredictionResult
+  execution?: {
+    mode: string
+    real_order_placed: boolean
+    broker_order_execution_enabled: boolean
+  }
+  warning: string
+}
+
+export interface StrategyResult {
+  symbol: string
+  decision: string
+  direction: string | null
+  prediction: 'DOWN' | 'SIDEWAYS' | 'UP'
+  probabilities: {
+    DOWN: number
+    SIDEWAYS: number
+    UP: number
+  }
+  candle_timestamp: string
+  prediction_horizon_minutes: number
+  model_version: string
+  model_status: string
+  risk_accepted: boolean
+  entry_price: number | null
+  stop_loss: number | null
+  quantity: number
+  position_value: number
+  estimated_total_risk: number
+  risk_reason: string
+  paper_trading_only: boolean
+  real_order_placed: boolean
+  reason: string
+}
+
+export interface LiveStrategyResponse {
+  success: boolean
+  symbol: string
+  data_source: string
+  synthetic_data: boolean
+  trading_date: string
+  timeframe: string
+  input_candles: number
+  completed_5min_candles: number
+  last_candle_timestamp: string
+  prediction_result: PredictionResult
+  strategy_result: StrategyResult
+  paper_trade_eligible: boolean
+  execution: {
+    mode: string
+    real_order_placed: boolean
+    broker_connected: boolean
+  }
+  warning: string
+}
