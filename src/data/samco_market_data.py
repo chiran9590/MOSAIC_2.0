@@ -75,6 +75,34 @@ class SamcoMarketDataProvider(MarketDataProvider):
             response.raise_for_status()
             result = response.json()
 
+        except requests.HTTPError as exc:
+            response = exc.response
+            status_code = (
+                response.status_code if response is not None else "unknown"
+            )
+            error_code = "unavailable"
+            message = "No error message returned"
+            if response is not None:
+                try:
+                    error_data = response.json()
+                    error_code = str(
+                        error_data.get("errorCode", "unavailable")
+                    )
+                    message = str(
+                        error_data.get(
+                            "statusMessage",
+                            error_data.get("message", message),
+                        )
+                    )[:200]
+                except ValueError:
+                    pass
+            message = message.replace(
+                self.session_token, "[REDACTED]"
+            )
+            raise RuntimeError(
+                f"Samco HTTP {status_code}; "
+                f"errorCode={error_code}; message={message}"
+            ) from None
         except requests.RequestException as exc:
             raise RuntimeError(
                 f"Samco market-data request failed: "
