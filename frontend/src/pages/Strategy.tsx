@@ -78,10 +78,15 @@ export default function Strategy() {
 
       setData(response)
     } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })
+        ?.response?.data?.detail
+
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to load the live strategy assessment.',
+        detail?.includes('No intraday candles returned')
+          ? 'Market is closed today. Live strategy analysis will resume when the market reopens.'
+          : err instanceof Error
+            ? err.message
+            : 'Unable to load the live strategy assessment.',
       )
     } finally {
       setLoading(false)

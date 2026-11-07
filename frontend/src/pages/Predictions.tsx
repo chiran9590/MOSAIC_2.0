@@ -62,10 +62,15 @@ function Predictions() {
         setStrategyData(null)
       }
     } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })
+        ?.response?.data?.detail
+
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to load prediction.',
+        detail?.includes('No intraday candles returned')
+          ? 'Market is closed today. Live predictions will resume when the market reopens.'
+          : err instanceof Error
+            ? err.message
+            : 'Unable to load prediction.',
       )
     } finally {
       setLoading(false)
