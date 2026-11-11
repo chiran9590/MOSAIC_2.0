@@ -179,21 +179,43 @@ function Market() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-[#493e25] bg-[#29251a] px-3 py-2 text-xs font-semibold text-amber-300">
-          MOCK DATA — NOT LIVE
+        <div className="rounded-lg border border-[#174b43] bg-[#102b29] px-3 py-2 text-xs font-semibold text-[#20c997]">
+          {market?.data_source === 'SAMCO'
+            ? 'SAMCO · REAL MARKET DATA'
+            : 'MARKET DATA'}
         </div>
       </div>
 
-      <div className="rounded-xl border border-[#713b42] bg-[#2b1920] p-4">
-        <div className="text-sm font-semibold text-[#f4a0a8]">
-          Synthetic market data
+      {market && (
+        <div className={`rounded-xl border p-4 ${
+          market.market_status === 'SESSION_HOURS'
+            ? 'border-[#174b43] bg-[#102b29]'
+            : 'border-[#493e25] bg-[#29251a]'
+        }`}>
+          <div className={`text-sm font-semibold ${
+            market.market_status === 'SESSION_HOURS'
+              ? 'text-[#20c997]'
+              : 'text-amber-300'
+          }`}>
+            {market.market_status === 'SESSION_HOURS'
+              ? 'NSE market session'
+              : 'Market closed · Latest available session'}
+          </div>
+          <p className="mt-1 text-xs leading-5 text-[#c2ccda]">
+            Source: Samco · {market.trading_date} ·
+            {' '}{market.total_candles} completed five-minute candles.
+            {market.is_current_session
+              ? ' Data belongs to today’s trading session.'
+              : ' Displaying the most recent available historical session.'}
+            {' '}The experimental model is not a validated trading signal.
+          </p>
+          {market.last_candle_timestamp && (
+            <p className="mt-2 text-xs text-[#8492a6]">
+              Last candle: {market.last_candle_timestamp} IST
+            </p>
+          )}
         </div>
-        <p className="mt-1 text-xs leading-5 text-[#d5a0a5]">
-          This page currently displays generated mock RELIANCE data from the
-          backend. It is not a live NSE feed and must not be used for trading
-          decisions.
-        </p>
-      </div>
+      )}
 
       {loading && (
         <div className="rounded-xl border border-[#202d40] bg-[#0e1625] p-8 text-center text-sm text-[#8492a6]">
@@ -226,8 +248,8 @@ function Market() {
                   <h2 className="text-xl font-semibold text-white">
                     {market.symbol}
                   </h2>
-                  <span className="rounded-md border border-[#493e25] bg-[#29251a] px-2 py-1 text-[10px] font-semibold text-amber-300">
-                    SYNTHETIC
+                  <span className="rounded-md border border-[#174b43] bg-[#102b29] px-2 py-1 text-[10px] font-semibold text-[#20c997]">
+                    {market.data_source}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-[#8492a6]">
@@ -301,7 +323,7 @@ function Market() {
                   viewBox={`0 0 ${chart.width} ${chart.height}`}
                   className="block min-w-[680px] w-full"
                   role="img"
-                  aria-label="Synthetic RELIANCE five-minute candlestick and volume chart"
+                  aria-label="RELIANCE five-minute candlestick and volume chart"
                 >
                   {chart.priceTicks.map((tick) => (
                     <g key={tick.value}>
@@ -419,7 +441,7 @@ function Market() {
           </section>
 
           <footer className="pb-3 text-[10px] text-[#617087]">
-            MOSAIC 2.0 · EXPERIMENTAL MARKET RESEARCH · SYNTHETIC DATA ONLY
+            MOSAIC 2.0 · EXPERIMENTAL MARKET RESEARCH · SAMCO MARKET DATA · PAPER TRADING ONLY
           </footer>
         </>
       )}

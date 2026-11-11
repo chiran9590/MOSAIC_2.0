@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from src.data.mock_market_data import MockMarketDataProvider
 from src.data.samco_market_data import SamcoMarketDataProvider
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from src.inference.live_candle_aggregator import aggregate_completed_5min
 from src.inference.prediction_engine import MosaicPredictionEngine
@@ -262,6 +262,124 @@ def get_mock_market_data():
         raise HTTPException(
             status_code=500,
             detail=f"Mock market data failed: {str(exc)}",
+        ) from exc
+
+
+# --------------------------------------------------
+# LIVE SAMCO MARKET DATA
+# --------------------------------------------------
+
+@app.get("/api/v1/market/live")
+def get_live_market_data():
+
+    try:
+        current_ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+        today = current_ist.date()
+
+        provider = SamcoMarketDataProvider()
+
+        # Search recent weekdays for the latest available session.
+        # A maximum of 10 calendar days prevents unlimited requests.
+        for offset in range(10):
+
+            candidate_date = today - timedelta(days=offset)
+
+            # Skip weekends.
+            if candidate_date.weekday() >= 5:
+                continue
+
+            trading_date = candidate_date.strftime("%Y-%m-%d")
+
+            try:
+                minute_candles = provider.fetch_minute_candles(
+                    symbol="RELIANCE",
+                    trading_date=trading_date,
+                )
+
+            except RuntimeError as exc:
+                # Only skip a date when Samco explicitly returns no candles.
+                # Authentication, network and other API errors must surface.
+                if "No intraday candles returned" in str(exc):
+                    continue
+                raise
+
+            if minute_candles.empty:
+                continue
+
+            five_minute_candles = aggregate_completed_5min(
+                minute_candles
+            )
+
+            # If there are no completed candles for this session,
+            # continue looking for the previous available session.
+            if five_minute_candles.empty:
+                continue
+
+            candles = []
+
+            for _, row in five_minute_candles.iterrows():
+                candles.append({
+                    "timestamp": row["timestamp"].strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+                    "open": float(row["open"]),
+                    "high": float(row["high"]),
+                    "low": float(row["low"]),
+                    "close": float(row["close"]),
+                    "volume": int(row["volume"]),
+                })
+
+            is_today = candidate_date == today
+
+            return {
+                "success": True,
+                "symbol": "RELIANCE",
+                "timeframe": "5minute",
+                "data_source": "SAMCO",
+                "synthetic_data": False,
+                "trading_date": trading_date,
+                "data_status": (
+                    "TODAY_SESSION"
+                    if is_today
+                    else "LAST_AVAILABLE_SESSION"
+                ),
+                "market_status": (
+                    "SESSION_HOURS"
+                    if (
+                        is_today
+                        and current_ist.weekday() < 5
+                        and current_ist.hour * 60 + current_ist.minute >= 555
+                        and current_ist.hour * 60 + current_ist.minute < 930
+                    )
+                    else "CLOSED"
+                ),
+                "is_current_session": is_today,
+                "input_candles": len(minute_candles),
+                "total_candles": len(candles),
+                "last_candle_timestamp": candles[-1]["timestamp"],
+                "candles": candles,
+                "warning": (
+                    "Real Samco market data. Historical session data may "
+                    "be displayed when the market is closed. This data "
+                    "is not a validated trading signal."
+                ),
+            }
+
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "No completed Samco market candles found in the "
+                "last 10 calendar days."
+            ),
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Live Samco market data failed: {str(exc)}",
         ) from exc
 
 

@@ -6,7 +6,6 @@ import type { PaperTrade, PerformanceResponse } from './types/api'
 const PaperTrading = lazy(() => import('./pages/PaperTrading'))
 const Predictions = lazy(() => import('./pages/Predictions'))
 const Market = lazy(() => import('./pages/Market'))
-const Analytics = lazy(() => import('./pages/Analytics'))
 const Strategy = lazy(() => import('./pages/Strategy'))
 const EquityChart = lazy(() => import('./components/EquityChart'))
 import {
@@ -34,7 +33,6 @@ const navigation = [
   { label: 'Predictions', icon: Activity, path: '/predictions' },
   { label: 'Strategy', icon: ShieldCheck, path: '/strategy' },
   { label: 'Paper Trading', icon: Wallet, path: '/paper-trading' },
-  { label: 'Analytics', icon: BarChart3, path: '/analytics' },
 ]
 
 const pageDescriptions: Record<string, string> = {
@@ -42,7 +40,6 @@ const pageDescriptions: Record<string, string> = {
   Predictions: 'Explore experimental market predictions and model outputs.',
   Strategy: 'Review trading strategies, signals and risk controls.',
   'Paper Trading': 'Monitor simulated trades and portfolio activity.',
-  Analytics: 'Analyze trading performance, returns and risk metrics.',
   Settings: 'Manage MOSAIC workspace preferences and configuration.',
 }
 
@@ -575,8 +572,6 @@ function App() {
             <Predictions />
           ) : activePage === 'Paper Trading' ? (
             <PaperTrading />
-          ) : activePage === 'Analytics' ? (
-            <Analytics />
           ) : activePage === 'Strategy' ? (
             <Strategy />
           ) : (

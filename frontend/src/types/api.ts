@@ -82,6 +82,11 @@ export interface MarketResponse {
   total_candles: number
   candles: MarketCandle[]
   warning: string
+  data_status?: string
+  market_status?: string
+  is_current_session?: boolean
+  input_candles?: number
+  last_candle_timestamp?: string
 }
 
 export interface PredictionResult {

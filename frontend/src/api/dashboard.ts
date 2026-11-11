@@ -31,7 +31,7 @@ export const getOpenPaperTrades = async () => {
 
 export const getMarketData = async () => {
   const response = await apiClient.get<MarketResponse>(
-    '/api/v1/market/mock'
+    '/api/v1/market/live'
   )
   return response.data
 }
