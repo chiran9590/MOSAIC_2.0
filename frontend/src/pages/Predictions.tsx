@@ -27,6 +27,44 @@ function formatProbability(value: number) {
   return `${(value * 100).toFixed(2)}%`
 }
 
+// API candle timestamps represent the start of a 5-minute candle.
+// The forecast begins when that candle has completed.
+function getForecastWindow(timestamp: string, horizonMinutes: number) {
+  const normalized = timestamp.includes('T')
+    ? timestamp
+    : timestamp.replace(' ', 'T')
+
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(normalized)
+
+  const candleStart = new Date(
+    hasTimezone ? normalized : `${normalized}+05:30`,
+  )
+
+  if (Number.isNaN(candleStart.getTime())) {
+    return null
+  }
+
+  const forecastStart = new Date(candleStart.getTime() + 5 * 60 * 1000)
+  const forecastEnd = new Date(
+    forecastStart.getTime() + horizonMinutes * 60 * 1000,
+  )
+
+  const formatter = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+
+  return {
+    start: formatter.format(forecastStart),
+    end: formatter.format(forecastEnd),
+  }
+}
+
 function Predictions() {
   const [mode, setMode] = useState<PredictionMode>('live')
   const [data, setData] = useState<
@@ -367,7 +405,7 @@ function Predictions() {
           )}
 
           {/* Summary cards */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 
             <section className="rounded-xl border border-[#202d40] bg-[#0e1625] p-5">
               <div className="flex items-center gap-2 text-xs text-[#8492a6]">
@@ -398,6 +436,49 @@ function Predictions() {
 
               <p className="mt-3 text-xs text-[#8492a6]">
                 {result.prediction_horizon_minutes}-minute prediction horizon
+              </p>
+            </section>
+
+            <section className="rounded-xl border border-[#202d40] bg-[#0e1625] p-5">
+              <div className="flex items-center gap-2 text-xs text-[#8492a6]">
+                <Clock size={15} />
+                FORECAST WINDOW
+              </div>
+
+              {(() => {
+                const window = getForecastWindow(
+                  result.candle_timestamp,
+                  result.prediction_horizon_minutes,
+                )
+
+                return window ? (
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <p className="text-[10px] text-[#8492a6]">
+                        FORECAST START
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {window.start} IST
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-[#8492a6]">
+                        FORECAST END
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {window.end} IST
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-amber-300">
+                    Forecast timing unavailable
+                  </p>
+                )
+              })()}
+
+              <p className="mt-3 text-[10px] leading-4 text-[#8492a6]">
+                Estimated prediction window, not an exact time when price movement is guaranteed.
               </p>
             </section>
 

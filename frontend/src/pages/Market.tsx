@@ -25,6 +25,7 @@ function Market() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -42,6 +43,7 @@ function Market() {
 
         if (!cancelled) {
           setMarket(response)
+          setLastRefreshed(new Date())
         }
       } catch (err) {
         if (!cancelled) {
@@ -303,9 +305,31 @@ function Market() {
                 <p className="mt-1 text-xs text-[#8492a6]">
                   Last {chartData.length} available candles · 5-minute interval
                 </p>
+                {lastRefreshed && (
+                  <p className="mt-1 text-[11px] text-[#617087]">
+                    Last refreshed: {lastRefreshed.toLocaleTimeString('en-IN', {
+                      timeZone: 'Asia/Kolkata',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: true,
+                    })} IST
+                  </p>
+                )}
               </div>
 
-              <div className="flex items-center gap-4 text-[11px]">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRetryCount((count) => count + 1)}
+                  disabled={loading}
+                  className="flex items-center gap-2 rounded-lg border border-[#304158] bg-[#142033] px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-[#1b2b42] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className={loading ? 'animate-spin' : ''}>↻</span>
+                  {loading ? 'Refreshing...' : 'Refresh'}
+                </button>
+
+                <div className="flex items-center gap-4 text-[11px]">
                 <span className="flex items-center gap-2 text-[#20c997]">
                   <span className="h-2 w-2 rounded-full bg-[#20c997]" />
                   Bullish
@@ -314,6 +338,7 @@ function Market() {
                   <span className="h-2 w-2 rounded-full bg-[#f16b78]" />
                   Bearish
                 </span>
+                </div>
               </div>
             </div>
 
